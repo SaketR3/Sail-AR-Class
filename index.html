@@ -50,8 +50,8 @@ const responseDiv = document.getElementById("response");
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      // video: { facingMode: "environment" },
-      video: true,
+      video: { facingMode: "environment" },
+      // video: true,
       audio: false
     });
 
