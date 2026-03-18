@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jarvis Lite</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      text-align: center;
+      background: black;
+      color: white;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+    }
+
+    button {
+      padding: 15px;
+      font-size: 18px;
+      margin: 10px;
+    }
+
+    #response {
+      padding: 10px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Jarvis Lite 👓</h2>
+
+<video id="video" autoplay playsinline muted></video>
+
+<br>
+
+<button onclick="startCapture()">🎤 Ask AI</button>
+
+<div id="response">Response will appear here...</div>
+
+<script>
+const video = document.getElementById("video");
+const responseDiv = document.getElementById("response");
+
+// Start camera
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      // video: { facingMode: "environment" },
+      video: true,
+      audio: false
+    });
+
+    video.srcObject = stream;
+
+    video.onloadedmetadata = () => {
+      video.play();
+    };
+
+  } catch (err) {
+    console.error("Camera error:", err);
+    alert("Camera access failed: " + err.message);
+  }
+}
+
+startCamera();
+
+
+// 🎤 Speech Recognition
+function getSpeechInput() {
+  return new Promise((resolve) => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Speech recognition not supported");
+      resolve("Describe what you see");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      resolve(event.results[0][0].transcript);
+    };
+
+    recognition.onerror = () => {
+      resolve("Describe what you see");
+    };
+
+    recognition.start();
+  });
+}
+
+
+// 📸 Capture snapshot
+function captureImage() {
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+
+  return canvas.toDataURL("image/jpeg");
+}
+
+
+// 🤖 AI call (Chrome built-in if available)
+async function askAI(prompt, imageData) {
+  try {
+    if (window.ai && window.ai.createTextSession) {
+      const session = await window.ai.createTextSession();
+
+      const result = await session.prompt(
+        `You are an AR assistant. 
+        User prompt: ${prompt}
+        Describe ONE useful thing in this image in under 15 words.`
+      );
+
+      return result;
+    } else {
+      // Fallback (no AI available)
+      return "I see something interesting. Try focusing on key objects.";
+    }
+  } catch (e) {
+    return "AI failed. Try again.";
+  }
+}
+
+
+// 🔊 Speak response
+function speak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  speechSynthesis.speak(utterance);
+}
+
+
+// 🚀 Main flow
+async function startCapture() {
+  responseDiv.innerText = "Listening...";
+
+  const userPrompt = await getSpeechInput();
+
+  responseDiv.innerText = "Thinking...";
+
+  const image = captureImage();
+
+  const aiResponse = await askAI(userPrompt, image);
+
+  responseDiv.innerText = aiResponse;
+
+  speak(aiResponse);
+}
+</script>
+
+</body>
+</html>
